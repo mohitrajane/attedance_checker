@@ -17,7 +17,7 @@ def login(login_url,login_details):
     password.send_keys(login_details['password'])
     login_attempt = browser.find_element_by_xpath('/html/body/div[2]/div/div[3]/div[2]/form/div/div/input')
     login_attempt.click()
-    
+
 #get attendance data from the web page
 def extract_data(table_raw,attendance_dict):
     attendance = list()
@@ -65,25 +65,27 @@ def read_json():
         attendance_dict = json.load(admission_json)
     find_shortage(attendance_dict)
     trim_attendance(attendance_dict)
-   
-                
+
 def find_shortage(attendance_dict):
      for i in attendance_dict:
         if i.startswith('Sub_'):
             if(attendance_dict[i][3] < 75.00) and attendance_dict[i][2] != 0:
                 no_of_hour_left = hours_needed(attendance_dict[i],0)
-                print('Attendance shortage:{}\nClass required(to reach 75%):{}'.format(attendance_dict[i][0],no_of_hour_left))
+                print('Attendance shortage: {}\nClass required (to reach 75%) : {}\n'.format(attendance_dict[i][0],no_of_hour_left))
 
 def trim_attendance(attendance_dict):
     for i in attendance_dict:
         if i.startswith('Sub_'):
             if(attendance_dict[i][3] >75.00):
                 trim_to_75 = hours_needed(attendance_dict[i],1)
-                print('Subject:{} you can cut:{}'.format(attendance_dict[i][0],trim_to_75))
+                print('\nSubject:{} \t\tcan cut:{}'.format(attendance_dict[i][0],trim_to_75))
 
 
 
-def main():
+
+
+if __name__ == '__main__':
+
     login_url = 'http://202.88.252.52/fisat/'
     admission_no = input('Enter admission no:')
     password = input('Enter password(DOB in format yyyymmdd):')
@@ -91,15 +93,15 @@ def main():
         'userid' : admission_no,
         'password' : password
     }
-   
-    #To check if user data exit 
+
+    #To check if user data exit
     if(os.path.isfile(admission_no+".json")):
         if_update=input("\nUpdate data(Y/N):")
         if if_update == 'N' or if_update == 'n':
             read_json()
             exit()
-        
-    #selinium initilizing options 
+
+    #selinium initilizing options
     options = Options()
     options.headless = True
     browser = webdriver.Firefox(options=options, executable_path='geckodriver')
@@ -119,15 +121,11 @@ def main():
     soup = BeautifulSoup(data,'lxml')
     table_raw = soup.find(class_='atnd_info_box')
     time.sleep(1)
+
     extract_data(table_raw,attendance_dict)
     find_shortage(attendance_dict)
     trim_attendance(attendance_dict)
-    
+
     with open(admission_no+'.json','w') as output:
         json.dump(attendance_dict,output)
     browser.quit()
-
-if __name__ == '__main__':
-    
-    main()
-    
