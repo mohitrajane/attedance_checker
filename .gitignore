@@ -1,1 +1,3 @@
-49616.json
+*.json
+Pipfile.lock
+*.log
