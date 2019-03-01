@@ -1,13 +1,38 @@
 #!/usr/bin/env python3
+
+#In-build modules
 import time
 import json
 import os
-import lxml
-from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.common.keys import Keys
-from bs4 import BeautifulSoup
+import argparse
 
+#3rd party modules
+try:
+    import lxml
+except ImportError:
+    print("Couldn't find lxml.\nQuitting....") 
+    exit(0)
+try:
+    from selenium import webdriver
+    from selenium.webdriver.firefox.options import Options
+    from selenium.webdriver.common.keys import Keys
+except ImportError:
+    print("Couldn't find Selenium.\nQuitting.....")
+    exit(0)
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    print("Couldn't find bs4.\nQuitting....")
+    exit(0)
+
+def check_arg(args=None):
+    parser = argparse.ArgumentParser(description='Know your attendance details ')
+    parser.add_argument('-U','--update',help='Update attendance details',default='Y')
+    parser.add_argument('-u','--user',type=int,help='username for web portal',default=-1)
+    parser.add_argument('-p','--password',type=int,help='password for web portal',default=-1)
+    parser.add_argument('-c','--cli',help='For all the CLI people out there :)' ,default='N')
+    results = parser.parse_args(args)
+    return (results.update,results.user,results.password,results.cli)
 
 def login(login_url,login_details):
     browser.get(login_url)
@@ -67,18 +92,20 @@ def read_json():
     trim_attendance(attendance_dict)
 
 def find_shortage(attendance_dict):
-     for i in attendance_dict:
+    print('\n-------------\nShortage For\n-------------')
+    for i in attendance_dict:
         if i.startswith('Sub_'):
             if(attendance_dict[i][3] < 75.00) and attendance_dict[i][2] != 0:
                 no_of_hour_left = hours_needed(attendance_dict[i],0)
-                print('Attendance shortage: {}\nClass required (to reach 75%) : {}\n'.format(attendance_dict[i][0],no_of_hour_left))
+                print('{} : {}(Class required)'.format(attendance_dict[i][0],no_of_hour_left))
 
 def trim_attendance(attendance_dict):
+    print('\n-------\nCan Cut\n-------')
     for i in attendance_dict:
         if i.startswith('Sub_'):
             if(attendance_dict[i][3] >75.00):
                 trim_to_75 = hours_needed(attendance_dict[i],1)
-                print('\nSubject:{} \t\tcan cut:{}'.format(attendance_dict[i][0],trim_to_75))
+                print('{} : {}'.format(attendance_dict[i][0],trim_to_75))
 
 
 
@@ -86,9 +113,27 @@ def trim_attendance(attendance_dict):
 
 if __name__ == '__main__':
 
+    if_update,admission_no,password,cli=check_arg()
+    #print("Update:{}[{}],User name: {}[{}], password: {}[{}], CLI:{}[{}]".format(if_update,type(if_update),admission_no,type(admission_no),password,type(password),cli,type(cli)))
+
+    if cli == 'N':
+        try:
+            from PyQt5.QtWidgets import QApplication,QLabel
+        except ImportError:
+            print("cant import PyQt5, install pyqt5 or use cli:).\nQuitting....") 
+            exit(0)
+        app = QApplication([])
+        label = QLabel('Attendacne checker')
+        label.show()
+        app.exec_()
+
     login_url = 'http://202.88.252.52/fisat/'
-    admission_no = input('Enter admission no:')
-    password = input('Enter password(DOB in format yyyymmdd):')
+    if admission_no == -1 or password == -1:
+        admission_no = input('Enter admission no:')
+        password = input('Enter password(DOB in format yyyymmdd):')
+
+    admission_no = str(admission_no)
+    password = str(password)
     login_details = {
         'userid' : admission_no,
         'password' : password
@@ -96,7 +141,6 @@ if __name__ == '__main__':
 
     #To check if user data exit
     if(os.path.isfile(admission_no+".json")):
-        if_update=input("\nUpdate data(Y/N):")
         if if_update == 'N' or if_update == 'n':
             read_json()
             exit()
@@ -124,7 +168,7 @@ if __name__ == '__main__':
 
     extract_data(table_raw,attendance_dict)
     find_shortage(attendance_dict)
-    trim_attendance(attendance_dict)
+    trim_attendance(attendance_dict) #to find how many hours can be cut
 
     with open(admission_no+'.json','w') as output:
         json.dump(attendance_dict,output)
