@@ -10,7 +10,7 @@ import argparse
 try:
     import lxml
 except ImportError:
-    print("Couldn't find lxml.\nQuitting....") 
+    print("Couldn't find lxml.\nQuitting....")
     exit(0)
 try:
     from selenium import webdriver
@@ -24,6 +24,7 @@ try:
 except ImportError:
     print("Couldn't find bs4.\nQuitting....")
     exit(0)
+
 
 def check_arg(args=None):
     parser = argparse.ArgumentParser(description='Know your attendance details ')
@@ -43,6 +44,7 @@ def login(login_url,login_details):
     login_attempt = browser.find_element_by_xpath('/html/body/div[2]/div/div[3]/div[2]/form/div/div/input')
     login_attempt.click()
 
+
 #get attendance data from the web page
 def extract_data(table_raw,attendance_dict):
     attendance = list()
@@ -60,9 +62,14 @@ def extract_data(table_raw,attendance_dict):
         percentage = float(attendance[i][3].split('%')[0])
         subject = [subject_name,period_attendented,total_period,percentage]
         attendance_dict['Sub_{}'.format(i)] = subject
-    last_update = attendance[0][1]
-    attendance_dict['last_update'] = last_update
-
+    try:
+        last_update = attendance[0][1]
+        attendance_dict['last_update'] = last_update
+    except IndexError:
+        # print("Couldn't fetch data")
+        print("NoDataFound")
+        return('NoDataFound')
+        exit(0)
 #to find number of hours required to get 75% atendance
 def hours_needed(sub,mode):
     current_hour = sub[1]
@@ -120,7 +127,7 @@ if __name__ == '__main__':
         try:
             from PyQt5.QtWidgets import QApplication,QLabel
         except ImportError:
-            print("cant import PyQt5, install pyqt5 or use cli:).\nQuitting....") 
+            print("cant import PyQt5, install pyqt5 or use cli:).\nQuitting....")
             exit(0)
         app = QApplication([])
         label = QLabel('Attendacne checker')
@@ -151,8 +158,12 @@ if __name__ == '__main__':
     browser = webdriver.Firefox(options=options, executable_path='geckodriver')
     attendance_dict = {}
     login(login_url,login_details)
-
-    name = browser.find_element_by_class_name('log_data').text.strip()
+    try:
+        name = browser.find_element_by_class_name('log_data').text.strip()
+    except:
+        print('User name or password is wrong')
+        # return('Login')
+        exit(0)
     name = name.split(',')
     attendance_dict['name'] = name[0]
     attendance_dict['admission_no'] = name[1].split('\n')[0]
