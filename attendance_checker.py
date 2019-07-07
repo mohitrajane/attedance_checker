@@ -42,6 +42,7 @@ def check_arg(args=None):
 
 
 def login(login_url, login_details):
+    """Log into students portal """
     global browser
     browser.get(login_url)
     username = browser.find_element_by_name('userid')
@@ -54,8 +55,8 @@ def login(login_url, login_details):
     login_attempt.click()
 
 
-# get attendance data from the web page
 def extract_data(table_raw, attendance_dict):
+    """get attendance data from raw HTML"""
     attendance = list()
     attendance_raw = table_raw.find_all('tbody')
     for tr in attendance_raw:
