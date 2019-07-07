@@ -5,6 +5,7 @@ import time
 import json
 import os
 import argparse
+import urllib.request
 
 # 3rd party modules
 try:
@@ -31,16 +32,13 @@ def check_arg(args=None):
         description='Know your attendance details'
     )
     parser.add_argument(
-        '-U', '--update', help='Update attendance details', default='Y'
-    )
-    parser.add_argument(
         '-u', '--user', type=int, help='username for web portal', default=-1
     )
     parser.add_argument(
         '-p', '--passw', type=int, help='password for web portal', default=-1
     )
     results = parser.parse_args(args)
-    return (results.update, results. user, results.passw)
+    return (results. user, results.passw)
 
 
 def login(login_url, login_details):
@@ -83,16 +81,9 @@ def extract_data(table_raw, attendance_dict):
         sys.exit(0)
 
 
-def read_json():
-    with open(admission_no+'.json', 'r') as admission_json:
-        attendance_dict = json.load(admission_json)
-    find_shortage(attendance_dict)
-    trim_attendance(attendance_dict)
-
-
-def main():
-
-    if_update, admission_no, password = check_arg()
+def attendance_check():
+    """Takes admission no and password returns attendance details and image of student """
+    admission_no, password = check_arg()
 
     login_url = 'http://202.88.252.52/fisat/'
     admission_no = str(admission_no)
@@ -102,13 +93,7 @@ def main():
         'password': password
     }
 
-    # To check if user data exit
-    if(os.path.isfile(admission_no+".json")):
-        if if_update == 'N' or if_update == 'n':
-            read_json()
-            exit()
-
-    # selinium initilizing options
+    # selinium initializing options
     options = Options()
     options.headless = True
     global browser
@@ -131,20 +116,34 @@ def main():
     browser.find_element_by_xpath(
         '/html/body/div[3]/div/div[2]/div/div/div[2]/div[3]'
     ).click()
-    # browser.find_element_by_xpath('/html/body/div[3]/div/div[2]/div/div/div[2]/div[1]').click()
-    time.sleep(20)
+    # Bellow method is to get the latest sem
+    # browser.find_element_by_xpath(
+    #   '/html/body/div[3]/div/div[2]/div/div/div[2]/div[1]'
+    # ).click()
+    time.sleep(10)
 
     data = browser.page_source
-    print(data)
     soup = BeautifulSoup(data, 'lxml')
-    table_raw = soup.find(class_='atnd_info_box')
+    # table_raw = soup.find(class_='atnd_info_box')
+    # bellow is only done for presentation purpose
+    table_raw = soup.find(
+        "div", attrs={"class": "atnd_info_box", "id": "sem2"}
+    )
     time.sleep(1)
 
     extract_data(table_raw, attendance_dict)
-    print(attendance_dict)
-    with open(admission_no+'.json', 'w') as output:
-        json.dump(attendance_dict, output)
-    browser.quit()
+    browser.find_element_by_xpath('/html/body/div[3]/div/div[1]/div/div/ul/li[2]').click()
+    time.sleep(2)
+
+    # get image
+    img_data = browser.page_source
+    soup = BeautifulSoup(img_data, 'lxml')
+    img_div = soup.find("div", {"id": "profile_img"})
+    # print(img_div)
+    img_src = img_div.find('img')['src']
+    with urllib.request.urlopen(img_src) as response:
+        img = response.read()
+    return(attendance_dict, img)
 
 if __name__ == '__main__':
-    main()
+    attendance_check()
