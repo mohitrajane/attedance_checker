@@ -59,7 +59,9 @@ def extract_data(table_raw, attendance_dict):
         attendance_dict['Sub_{}'.format(i)] = subject
     try:
         last_update = attendance[0][1]
+        total_percentage = attendance[0][4]
         attendance_dict['last_update'] = last_update
+        attendance_dict['total_percentage'] = total_percentage
     except IndexError:
         # print("Couldn't fetch data")
         print("NoDataFound")
