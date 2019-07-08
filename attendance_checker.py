@@ -4,7 +4,6 @@
 import time
 import json
 import os
-import argparse
 import urllib.request
 
 # 3rd party modules
@@ -25,20 +24,6 @@ try:
 except ImportError:
     print("Couldn't find bs4.\nQuitting....")
     exit(0)
-
-
-def check_arg(args=None):
-    parser = argparse.ArgumentParser(
-        description='Know your attendance details'
-    )
-    parser.add_argument(
-        '-u', '--user', type=int, help='username for web portal', default=-1
-    )
-    parser.add_argument(
-        '-p', '--passw', type=int, help='password for web portal', default=-1
-    )
-    results = parser.parse_args(args)
-    return (results. user, results.passw)
 
 
 def login(login_url, login_details):
@@ -82,9 +67,8 @@ def extract_data(table_raw, attendance_dict):
         sys.exit(0)
 
 
-def attendance_check():
+def attendance_check(admission_no, password):
     """Takes admission no and password returns attendance details and image of student """
-    admission_no, password = check_arg()
 
     login_url = 'http://202.88.252.52/fisat/'
     admission_no = str(admission_no)
@@ -113,7 +97,7 @@ def attendance_check():
     browser.find_element_by_xpath(
         '/html/body/div[3]/div/div[1]/div/div/ul/li[3]'
     ).click()
-    time.sleep(3)
+    time.sleep(2)
     browser.find_element_by_xpath(
         '/html/body/div[3]/div/div[2]/div/div/div[2]/div[3]'
     ).click()
@@ -121,7 +105,7 @@ def attendance_check():
     # browser.find_element_by_xpath(
     #   '/html/body/div[3]/div/div[2]/div/div/div[2]/div[1]'
     # ).click()
-    time.sleep(10)
+    time.sleep(5)
 
     data = browser.page_source
     soup = BeautifulSoup(data, 'lxml')
